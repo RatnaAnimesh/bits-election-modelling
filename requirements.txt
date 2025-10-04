@@ -1,0 +1,13 @@
+pandas
+numpy
+networkx
+matplotlib
+mesa
+scipy
+jupyter
+pyarrow
+fastparquet
+tqdm
+scikit-learn
+altair
+plotly

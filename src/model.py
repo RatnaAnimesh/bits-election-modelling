@@ -84,6 +84,11 @@ class StudentAgent(Agent):
                 edge_data = self.model.grid.get_edge_data(self.node_id, neighbor_node_id)
                 weight = edge_data.get('weight', 0.1)
                 neighbor_agent = self.model.grid.nodes[neighbor_node_id]['agent']
+
+                # Give more weight to seniors
+                if edge_data.get('layer') == 'junior-senior':
+                    weight *= 1.5
+
                 for cand_id in avg_neighbor_opinion:
                     avg_neighbor_opinion[cand_id] += neighbor_agent.opinion[post][cand_id] * weight
                 total_weight += weight
@@ -110,6 +115,11 @@ class StudentAgent(Agent):
                 enthusiasm += abs(opinion_score - 0.5)
         enthusiasm /= len(self.model.candidates)
         self.next_turnout_propensity = (0.8 * self.baseline_turnout_propensity) + (0.2 * enthusiasm * 2)
+
+        # Increase turnout propensity of SSMS winners
+        if self.is_ssms_winner:
+            self.next_turnout_propensity *= 1.2
+
         self.next_turnout_propensity = max(0, min(1, self.next_turnout_propensity))
 
     def evaluate_deal(self, deal):
@@ -126,6 +136,8 @@ class StudentAgent(Agent):
         for post, opinions in self.next_opinion.items():
             if deal.proposer_id in opinions:
                 opinions[deal.proposer_id] = min(1.0, self.opinion[post][deal.proposer_id] + 0.2)
+
+import pandas as pd
 
 class ElectionModel(Model):
     """The main model for the BITS SU election simulation."""
@@ -145,6 +157,18 @@ class ElectionModel(Model):
             Misinformation("m1", "Candidate A cheated in an exam", 0.8, 0.6, "rival_camp"),
         ]
 
+        # Load junior-senior and SSMS election results data
+        try:
+            junior_senior_df = pd.read_csv("/Users/ashishmishra/bits-election-simulator/data/junior_senior.csv")
+            ssms_election_results_df = pd.read_csv("/Users/ashishmishra/bits-election-simulator/data/ssms_election_results.csv")
+        except FileNotFoundError:
+            junior_senior_df = pd.DataFrame(columns=['junior_id', 'senior_id'])
+            ssms_election_results_df = pd.DataFrame(columns=['student_id', 'post'])
+
+        # Add junior-senior layer to the graph
+        for index, row in junior_senior_df.iterrows():
+            self.grid.add_edge(row['junior_id'], row['senior_id'], layer='junior-senior', weight=0.5)
+
         for i, node in enumerate(self.grid.nodes(data=True)):
             agent_id = node[0]
             attributes = node[1]
@@ -154,6 +178,11 @@ class ElectionModel(Model):
 
             agent = StudentAgent(self, agent_id, {}, attributes.get('baseline_turnout_propensity', 0.5), attributes.get('slander_susceptibility', 0.5), attributes.get('skepticism', 0.5))
             agent.interests = interests
+
+            # Set is_ssms_winner attribute
+            if agent_id in ssms_election_results_df['student_id'].values:
+                agent.is_ssms_winner = True
+
             self.grid.nodes[agent_id]['agent'] = agent
 
         self.datacollector = DataCollector(model_reporters={"Infected": lambda m: sum([1 for a in m.agents if a.misinformation_state == 'infected'])})

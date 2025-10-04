@@ -20,6 +20,7 @@ class Student:
     skepticism: float = 0.5
     # Community label for segmentation
     micro_community: str = ""
+    is_ssms_winner: bool = False
     interests: List[str] = field(default_factory=list)
 
 @dataclass

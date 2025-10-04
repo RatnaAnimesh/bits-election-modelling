@@ -3,7 +3,7 @@ from mesa import Agent, Model
 from mesa.datacollection import DataCollector
 import networkx as nx
 import random
-from data_schema import Misinformation, Candidate, Deal
+from src.data_schema import Misinformation, Candidate, Deal
 
 class StudentAgent(Agent):
     """An agent representing a student in the election simulation."""

@@ -16,6 +16,8 @@ class StudentAgent(Agent):
         self.slander_susceptibility = slander_susceptibility
         self.skepticism = skepticism
         self.is_ssms_winner = False
+        self.is_mess_rep = False
+        self.is_amc_member = False
         self.misinformation_state = "susceptible"
         self.infected_by = None
         self.power_broker_score = random.random()

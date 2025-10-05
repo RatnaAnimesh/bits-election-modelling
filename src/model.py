@@ -90,6 +90,10 @@ class StudentAgent(Agent):
                 if edge_data.get('layer') == 'junior-senior':
                     weight *= 1.5
 
+                # Give more weight to mess reps and AMC members
+                if neighbor_agent.is_mess_rep or neighbor_agent.is_amc_member:
+                    weight *= 1.5
+
                 for cand_id in avg_neighbor_opinion:
                     avg_neighbor_opinion[cand_id] += neighbor_agent.opinion[post][cand_id] * weight
                 total_weight += weight
@@ -117,8 +121,8 @@ class StudentAgent(Agent):
         enthusiasm /= len(self.model.candidates)
         self.next_turnout_propensity = (0.8 * self.baseline_turnout_propensity) + (0.2 * enthusiasm * 2)
 
-        # Increase turnout propensity of SSMS winners
-        if self.is_ssms_winner:
+        # Increase turnout propensity of SSMS winners, mess reps, and AMC members
+        if self.is_ssms_winner or self.is_mess_rep or self.is_amc_member:
             self.next_turnout_propensity *= 1.2
 
         self.next_turnout_propensity = max(0, min(1, self.next_turnout_propensity))
@@ -162,9 +166,13 @@ class ElectionModel(Model):
         try:
             junior_senior_df = pd.read_csv("/Users/ashishmishra/bits-election-simulator/data/junior_senior.csv")
             ssms_election_results_df = pd.read_csv("/Users/ashishmishra/bits-election-simulator/data/ssms_election_results.csv")
+            mess_reps_df = pd.read_csv("/Users/ashishmishra/bits-election-simulator/data/mess_reps.csv")
+            amc_members_df = pd.read_csv("/Users/ashishmishra/bits-election-simulator/data/amc_members.csv")
         except FileNotFoundError:
             junior_senior_df = pd.DataFrame(columns=['junior_id', 'senior_id'])
             ssms_election_results_df = pd.DataFrame(columns=['student_id', 'post'])
+            mess_reps_df = pd.DataFrame(columns=['student_id'])
+            amc_members_df = pd.DataFrame(columns=['student_id', 'post'])
 
         # Add junior-senior layer to the graph
         for index, row in junior_senior_df.iterrows():
@@ -183,6 +191,14 @@ class ElectionModel(Model):
             # Set is_ssms_winner attribute
             if agent_id in ssms_election_results_df['student_id'].values:
                 agent.is_ssms_winner = True
+
+            # Set is_mess_rep attribute
+            if agent_id in mess_reps_df['student_id'].values:
+                agent.is_mess_rep = True
+
+            # Set is_amc_member attribute
+            if agent_id in amc_members_df['student_id'].values:
+                agent.is_amc_member = True
 
             self.grid.nodes[agent_id]['agent'] = agent
 

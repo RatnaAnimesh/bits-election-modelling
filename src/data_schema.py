@@ -21,6 +21,8 @@ class Student:
     # Community label for segmentation
     micro_community: str = ""
     is_ssms_winner: bool = False
+    is_mess_rep: bool = False
+    is_amc_member: bool = False
     interests: List[str] = field(default_factory=list)
 
 @dataclass
